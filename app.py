@@ -5,7 +5,7 @@ from statsmodels.tsa.arima_process import ArmaProcess
 from statsmodels.tsa.arima.model import ARIMA
 
 st.set_page_config(layout="wide")
-st.title("Simulador AR / MA / ARMA e IRF (con checks de estabilidad)")
+st.title("Simulador AR / MA / ARMA e IRF")
 
 # -----------------------------
 # Utils: raíces / checks
@@ -337,3 +337,4 @@ with right:
 
 with st.expander("Resumen del modelo estimado"):
     st.text(res.summary().as_text())
+
