@@ -27,38 +27,39 @@ with st.sidebar:
         p = st.slider("Orden AR (p)", 1, 5, 2)
         q = st.slider("Orden MA (q)", 1, 5, 1)
 
-    st.markdown("---")
-    st.subheader("Parámetros")
+    tab1, tab2, tab3 = st.tabs(["Parámetros", "Simulación", "IRF"])
 
-    ar_params = []
-    ma_params = []
+    with tab1:
+        st.subheader("Coeficientes")
 
-    if model_type in ["AR", "ARMA"] and p > 0:
-        for i in range(1, p + 1):
-            ar_params.append(
-                st.slider(f"φ{i}", -0.99, 0.99, 0.4 if i == 1 else 0.0, 0.01)
-            )
+        ar_params = []
+        ma_params = []
 
-    if model_type in ["MA", "ARMA"] and q > 0:
-        for i in range(1, q + 1):
-            ma_params.append(
-                st.slider(f"θ{i}", -0.99, 0.99, 0.4 if i == 1 else 0.0, 0.01)
-            )
+        if model_type in ["AR", "ARMA"] and p > 0:
+            st.markdown("**Parte AR**")
+            for i in range(1, p + 1):
+                ar_params.append(
+                    st.slider(f"φ{i}", -0.99, 0.99, 0.4 if i == 1 else 0.0, 0.01)
+                )
 
-    st.markdown("---")
-    st.subheader("Simulación")
+        if model_type in ["MA", "ARMA"] and q > 0:
+            st.markdown("**Parte MA**")
+            for i in range(1, q + 1):
+                ma_params.append(
+                    st.slider(f"θ{i}", -0.99, 0.99, 0.4 if i == 1 else 0.0, 0.01)
+                )
 
-    sigma = st.slider("σ", 0.1, 5.0, 1.0, 0.1)
-    n = st.slider("Tamaño de muestra", 100, 3000, 1000, 50)
-    burnin = st.slider("Burn-in", 0, 2000, 300, 10)
-    seed = st.number_input("Semilla", min_value=0, max_value=999999, value=1234, step=1)
+    with tab2:
+        st.subheader("Opciones de simulación")
+        sigma = st.slider("σ (desv. típica de la innovación)", 0.1, 5.0, 1.0, 0.1)
+        n = st.slider("Tamaño de muestra", 100, 3000, 1000, 50)
+        burnin = st.slider("Burn-in", 0, 2000, 300, 10)
+        seed = st.number_input("Semilla", min_value=0, max_value=999999, value=1234, step=1)
 
-    st.markdown("---")
-    st.subheader("IRF")
-
-    steps = st.slider("Horizonte", 1, 60, 20, 1)
-    shock_mode = st.radio("Impulso", ["Shock unitario", "Shock = σ"], index=0)
-    show_estimated = st.checkbox("Mostrar IRF estimada", value=True)
+    with tab3:
+        st.subheader("Opciones de IRF")
+        steps = st.slider("Horizonte", 1, 60, 20, 1)
+        show_estimated = st.checkbox("Mostrar IRF estimada", value=True)
 
 # =========================================================
 # PREPARACIÓN
@@ -68,8 +69,11 @@ np.random.seed(int(seed))
 ar_params = np.array(ar_params, dtype=float) if len(ar_params) else np.array([])
 ma_params = np.array(ma_params, dtype=float) if len(ma_params) else np.array([])
 
+# Convención de statsmodels:
+# AR: 1 - φ1 L - φ2 L^2 - ...
+# MA: 1 + θ1 L + θ2 L^2 + ...
 ar_poly = np.r_[1.0, -ar_params] if len(ar_params) else np.array([1.0])
-ma_poly = np.r_[1.0,  ma_params] if len(ma_params) else np.array([1.0])
+ma_poly = np.r_[1.0, ma_params] if len(ma_params) else np.array([1.0])
 
 proc = ArmaProcess(ar_poly, ma_poly)
 
@@ -85,12 +89,9 @@ ma_roots = np.roots(ma_poly) if len(ma_poly) > 1 else np.array([])
 y = proc.generate_sample(nsample=n + burnin, scale=sigma)[burnin:]
 
 # =========================================================
-# IRF TEÓRICA
+# IRF TEÓRICA (shock unitario)
 # =========================================================
 irf_theoretical = proc.arma2ma(lags=steps)
-
-if shock_mode == "Shock = σ":
-    irf_theoretical = sigma * irf_theoretical
 
 # =========================================================
 # ESTIMACIÓN
@@ -111,15 +112,12 @@ try:
     else:
         irf_estimated = np.asarray(res.impulse_response(steps=steps)).reshape(-1)
 
-    if shock_mode == "Shock = σ":
-        irf_estimated = sigma * irf_estimated
-
 except Exception as e:
     fit_ok = False
     fit_msg = str(e)
 
 # =========================================================
-# CABECERA RESUMEN
+# RESUMEN
 # =========================================================
 st.subheader("Resumen")
 
@@ -156,7 +154,11 @@ with right:
     fig2, ax2 = plt.subplots(figsize=(8, 4.5), dpi=120)
 
     h = np.arange(len(irf_theoretical))
-    ax2.stem(h, irf_theoretical, basefmt=" ", label="Teórica")
+    markerline1, stemlines1, baseline1 = ax2.stem(
+        h, irf_theoretical, basefmt=" ", label="Teórica"
+    )
+    plt.setp(stemlines1, linewidth=1.8)
+    plt.setp(markerline1, markersize=5)
 
     if show_estimated and irf_estimated is not None:
         h2 = np.arange(len(irf_estimated))
@@ -164,7 +166,7 @@ with right:
 
     ax2.axhline(0, linewidth=1)
     ax2.set_xlabel("Horizonte")
-    ax2.set_ylabel("Respuesta")
+    ax2.set_ylabel("Respuesta al impulso")
     ax2.grid(True, alpha=0.25)
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
@@ -192,20 +194,26 @@ with st.expander("Ver detalle técnico"):
     with colr1:
         st.markdown("**Raíces AR**")
         if len(ar_roots) > 0:
-            st.dataframe(pd.DataFrame({
-                "Raíz": ar_roots.astype(complex),
-                "Módulo": np.abs(ar_roots)
-            }), use_container_width=True)
+            st.dataframe(
+                pd.DataFrame({
+                    "Raíz": ar_roots.astype(complex),
+                    "Módulo": np.abs(ar_roots)
+                }),
+                use_container_width=True
+            )
         else:
             st.write("No aplica.")
 
     with colr2:
         st.markdown("**Raíces MA**")
         if len(ma_roots) > 0:
-            st.dataframe(pd.DataFrame({
-                "Raíz": ma_roots.astype(complex),
-                "Módulo": np.abs(ma_roots)
-            }), use_container_width=True)
+            st.dataframe(
+                pd.DataFrame({
+                    "Raíz": ma_roots.astype(complex),
+                    "Módulo": np.abs(ma_roots)
+                }),
+                use_container_width=True
+            )
         else:
             st.write("No aplica.")
 
@@ -217,18 +225,14 @@ with st.expander("Ver detalle técnico"):
         st.code(fit_msg)
 
 # =========================================================
-# INTERPRETACIÓN BREVE
+# INTERPRETACIÓN
 # =========================================================
 st.subheader("Interpretación")
-
-if shock_mode == "Shock unitario":
-    st.write("La IRF representa la respuesta dinámica ante una innovación inicial de tamaño 1.")
-else:
-    st.write("La IRF representa la respuesta dinámica ante una innovación inicial de tamaño σ.")
-
+st.write("La IRF representa la respuesta dinámica de la serie ante una innovación inicial de tamaño 1.")
 st.write(
-    "La respuesta teórica viene del modelo introducido. "
-    "La estimada viene del modelo ajustado sobre la muestra simulada y puede diferir por error muestral."
+    "La respuesta teórica procede del modelo AR / MA / ARMA fijado por los parámetros introducidos. "
+    "La respuesta estimada procede del modelo ajustado sobre la muestra simulada, por lo que puede diferir "
+    "de la teórica por error muestral y de estimación."
 )
 
 
