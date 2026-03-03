@@ -8,6 +8,20 @@ st.set_page_config(layout="wide")
 st.title("Simulador AR / MA / ARMA e IRF")
 
 # -------------------------------------------------
+# Función auxiliar para mostrar raíces
+# -------------------------------------------------
+def format_roots(roots):
+    if len(roots) == 0:
+        return "No aplica"
+    out = []
+    for r in roots:
+        if np.isclose(r.imag, 0):
+            out.append(f"{r.real:.3f} (real)")
+        else:
+            out.append(f"{r.real:.3f} {'+' if r.imag >= 0 else '-'} {abs(r.imag):.3f}i (compleja)")
+    return "\n".join(out)
+
+# -------------------------------------------------
 # Sidebar
 # -------------------------------------------------
 with st.sidebar:
@@ -32,12 +46,18 @@ with st.sidebar:
         ma_params = []
 
         if model_type in ["AR", "ARMA"]:
+            st.markdown("**Parte AR**")
             for i in range(1, p + 1):
-                ar_params.append(st.slider(f"φ{i}", -0.99, 0.99, 0.4 if i == 1 else 0.0, 0.01))
+                ar_params.append(
+                    st.slider(f"φ{i}", -0.99, 0.99, 0.4 if i == 1 else 0.0, 0.01)
+                )
 
         if model_type in ["MA", "ARMA"]:
+            st.markdown("**Parte MA**")
             for i in range(1, q + 1):
-                ma_params.append(st.slider(f"θ{i}", -0.99, 0.99, 0.4 if i == 1 else 0.0, 0.01))
+                ma_params.append(
+                    st.slider(f"θ{i}", -0.99, 0.99, 0.4 if i == 1 else 0.0, 0.01)
+                )
 
     with tab2:
         sigma = st.slider("σ", 0.1, 5.0, 1.0, 0.1)
@@ -66,6 +86,9 @@ proc = ArmaProcess(ar_poly, ma_poly)
 is_stationary = proc.isstationary
 is_invertible = proc.isinvertible
 
+ar_roots = np.roots(ar_poly) if len(ar_poly) > 1 else np.array([])
+ma_roots = np.roots(ma_poly) if len(ma_poly) > 1 else np.array([])
+
 # Simulación
 y = proc.generate_sample(nsample=n + burnin, scale=sigma)[burnin:]
 
@@ -90,6 +113,20 @@ c1, c2, c3 = st.columns(3)
 c1.metric("Modelo", model_type)
 c2.metric("AR estacionario", "Sí" if is_stationary else "No")
 c3.metric("MA invertible", "Sí" if is_invertible else "No")
+
+# -------------------------------------------------
+# Información adicional
+# -------------------------------------------------
+with st.expander("Información adicional"):
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**Raíces AR**")
+        st.text(format_roots(ar_roots))
+
+    with col2:
+        st.markdown("**Raíces MA**")
+        st.text(format_roots(ma_roots))
 
 # -------------------------------------------------
 # Gráficos
