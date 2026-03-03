@@ -18,7 +18,8 @@ def format_roots(roots):
         if np.isclose(r.imag, 0):
             out.append(f"{r.real:.3f} (real)")
         else:
-            out.append(f"{r.real:.3f} {'+' if r.imag >= 0 else '-'} {abs(r.imag):.3f}i (compleja)")
+            sign = "+" if r.imag >= 0 else "-"
+            out.append(f"{r.real:.3f} {sign} {abs(r.imag):.3f}i (compleja)")
     return "\n".join(out)
 
 # -------------------------------------------------
@@ -115,20 +116,6 @@ c2.metric("AR estacionario", "Sí" if is_stationary else "No")
 c3.metric("MA invertible", "Sí" if is_invertible else "No")
 
 # -------------------------------------------------
-# Información adicional
-# -------------------------------------------------
-with st.expander("Información adicional"):
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("**Raíces AR**")
-        st.text(format_roots(ar_roots))
-
-    with col2:
-        st.markdown("**Raíces MA**")
-        st.text(format_roots(ma_roots))
-
-# -------------------------------------------------
 # Gráficos
 # -------------------------------------------------
 left, right = st.columns(2)
@@ -158,6 +145,20 @@ with right:
     ax2.grid(alpha=0.3)
     ax2.legend()
     st.pyplot(fig2)
+
+# -------------------------------------------------
+# Información adicional
+# -------------------------------------------------
+with st.expander("Información adicional"):
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**Raíces AR**")
+        st.text(format_roots(ar_roots))
+
+    with col2:
+        st.markdown("**Raíces MA**")
+        st.text(format_roots(ma_roots))
 
 
 
