@@ -67,7 +67,7 @@ with st.sidebar:
         seed = st.number_input("Semilla", 0, 999999, 1234, 1)
 
     with tab3:
-        steps = st.slider("Horizonte IRF", 1, 60, 20, 1)
+        steps = st.slider("Horizonte IRF", 1, 200, 20, 1)
         show_estimated = st.checkbox("Mostrar IRF estimada", value=True)
 
 # -------------------------------------------------
@@ -176,6 +176,7 @@ with st.expander("Nota metodológica"):
           innovación, es decir, una perturbación de tamaño 1 en el instante inicial.
         """
     )
+
 
 
 
