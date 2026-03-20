@@ -164,15 +164,15 @@ with st.expander("Información adicional"):
 with st.expander("Nota metodológica"):
     st.markdown(
         """
-        - **IRF teórica**: se obtiene directamente del proceso AR / MA / ARMA introducido por el usuario, 
+        - **IRF teórica**: Se obtiene directamente del proceso AR / MA / ARMA introducido por el usuario, 
           a partir de su representación MA infinita. Por tanto, refleja la respuesta exacta del modelo
           poblacional ante un impulso.
 
-        - **IRF estimada**: se obtiene ajustando un modelo ARIMA(p,0,q) sobre la serie simulada y calculando
+        - **IRF estimada**: Se obtiene ajustando un modelo ARIMA(p,0,q) sobre la serie simulada y calculando
           después la respuesta al impulso del modelo estimado. Puede diferir de la teórica por error muestral
           y de estimación.
 
-        - **Magnitud del shock**: en esta aplicación, la IRF se calcula frente a un **shock unitario** en la
+        - **Magnitud del shock**: En esta aplicación, la IRF se calcula frente a un **shock unitario** en la
           innovación, es decir, una perturbación de tamaño 1 en el instante inicial.
         """
     )
